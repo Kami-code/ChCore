@@ -15,7 +15,8 @@ static inline vaddr_t get_fault_addr()
 
 // EC: Instruction Abort or Data Abort
 void do_page_fault(u64 esr, u64 fault_ins_addr)
-{
+{	
+	printk("do page fault!\n");
         vaddr_t fault_addr;
         int fsc; // fault status code
 
@@ -26,9 +27,15 @@ void do_page_fault(u64 esr, u64 fault_ins_addr)
         case DFSC_TRANS_FAULT_L1:
         case DFSC_TRANS_FAULT_L2:
         case DFSC_TRANS_FAULT_L3: {
+        
+		
+		printk("do page fault1!\n");
+		printk("fault_addr = %d\n", fault_addr);
+		print_thread(current_thread);
                 int ret;
                 /* LAB 3 TODO BEGIN */
-
+		ret = handle_trans_fault(current_thread->vmspace,
+				       fault_addr);
                 /* LAB 3 TODO END */
                 if (ret != 0) {
                         kinfo("do_page_fault: faulting ip is 0x%lx (real IP),"

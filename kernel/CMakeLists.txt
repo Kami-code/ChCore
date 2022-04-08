@@ -49,7 +49,7 @@ target_link_options(${kernel_target} PRIVATE -no-pie -nostdlib -nostartfiles
 target_compile_definitions(${kernel_target}
                            PRIVATE $<$<CONFIG:Debug>:LOG_LEVEL=2>)
 target_compile_definitions(${kernel_target}
-                           PRIVATE $<$<CONFIG:Release>:LOG_LEVEL=1>)
+                           PRIVATE $<$<CONFIG:Release>:LOG_LEVEL=2>)
 
 # Include directories
 target_include_directories(${kernel_target} PRIVATE include)

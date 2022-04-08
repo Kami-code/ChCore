@@ -62,6 +62,7 @@ void main(paddr_t boot_flag)
         kinfo("[ChCore] create initial thread done on %d\n", smp_get_cpu_id());
 
         /* Context switch to the picked thread */
+        
         eret_to_thread(switch_context());
 
         /* Should provide panic and use here */

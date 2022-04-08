@@ -16,6 +16,7 @@
 
 int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
 {
+	printk("[handle] page fault!\n");
         struct vmregion *vmr;
         struct pmobject *pmo;
         paddr_t pa;
@@ -35,6 +36,7 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
 
                 kprint_vmr(vmspace);
                 kwarn("TODO: kill such faulting process.\n");
+                sys_thread_exit();
                 return -ENOMAPPING;
         }
 
@@ -55,13 +57,21 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
 
                 fault_addr = ROUND_DOWN(fault_addr, PAGE_SIZE);
                 /* LAB 3 TODO BEGIN */
-
+		pa = get_page_from_pmo(pmo, index);
                 /* LAB 3 TODO END */
                 if (pa == 0) {
                         /* Not committed before. Then, allocate the physical
                          * page. */
                         /* LAB 3 TODO BEGIN */
+                        vaddr_t kva = (vaddr_t)get_pages(0);
+                        BUG_ON(kva == 0);
 
+                        pa = virt_to_phys((void *)kva);
+                        memset((void *)kva, 0, PAGE_SIZE);
+                        commit_page_to_pmo(pmo, index, pa);
+                        pmo->start = pa;
+                        if(map_range_in_pgtbl(vmspace->pgtbl, vmr->start, pa, pmo->size, vmr->perm) < 0)
+				return -ENOMAPPING;
                         /* LAB 3 TODO END */
 #ifdef CHCORE_LAB3_TEST
                         printk("Test: Test: Successfully map\n");
@@ -89,7 +99,8 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
                          * Repeated mapping operations are harmless.
                          */
                         /* LAB 3 TODO BEGIN */
-
+                        if(map_range_in_pgtbl(vmspace->pgtbl, vmr->start, pa, pmo->size, vmr->perm) < 0)
+				return -ENOMAPPING;
                         /* LAB 3 TODO END */
 #ifdef CHCORE_LAB3_TEST
                         printk("Test: Test: Successfully map for pa not 0\n");
