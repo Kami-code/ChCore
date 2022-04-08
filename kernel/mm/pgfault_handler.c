@@ -36,7 +36,6 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
 
                 kprint_vmr(vmspace);
                 kwarn("TODO: kill such faulting process.\n");
-                sys_thread_exit();
                 return -ENOMAPPING;
         }
 
@@ -65,12 +64,11 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
                         /* LAB 3 TODO BEGIN */
                         vaddr_t kva = (vaddr_t)get_pages(0);
                         BUG_ON(kva == 0);
-
+			 fault_addr = ROUND_DOWN(fault_addr, PAGE_SIZE);
                         pa = virt_to_phys((void *)kva);
                         memset((void *)kva, 0, PAGE_SIZE);
                         commit_page_to_pmo(pmo, index, pa);
-                        pmo->start = pa;
-                        if(map_range_in_pgtbl(vmspace->pgtbl, vmr->start, pa, pmo->size, vmr->perm) < 0)
+                        if(map_range_in_pgtbl(vmspace->pgtbl, fault_addr, pa, PAGE_SIZE, vmr->perm) < 0)
 				return -ENOMAPPING;
                         /* LAB 3 TODO END */
 #ifdef CHCORE_LAB3_TEST
@@ -99,8 +97,11 @@ int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
                          * Repeated mapping operations are harmless.
                          */
                         /* LAB 3 TODO BEGIN */
-                        if(map_range_in_pgtbl(vmspace->pgtbl, vmr->start, pa, pmo->size, vmr->perm) < 0)
-				return -ENOMAPPING;
+                        //printk("Test: Test: Successfully map for pa not 0\n");
+                        fault_addr = ROUND_DOWN(fault_addr, PAGE_SIZE);
+                        ret = map_range_in_pgtbl(vmspace->pgtbl, fault_addr, pa, PAGE_SIZE, vmr->perm);
+                        //if(map_range_in_pgtbl(vmspace->pgtbl, fault_addr, pa, PAGE_SIZE, vmr->perm) < 0)
+			 //	return -ENOMAPPING;
                         /* LAB 3 TODO END */
 #ifdef CHCORE_LAB3_TEST
                         printk("Test: Test: Successfully map for pa not 0\n");
