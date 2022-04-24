@@ -16,7 +16,6 @@
 
 int handle_trans_fault(struct vmspace *vmspace, vaddr_t fault_addr)
 {
-	printk("[handle] page fault!\n");
         struct vmregion *vmr;
         struct pmobject *pmo;
         paddr_t pa;

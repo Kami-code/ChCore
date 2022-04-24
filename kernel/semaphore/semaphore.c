@@ -26,18 +26,14 @@ s32 wait_sem(struct semaphore *sem, bool is_block)
         if (current_thread == NULL) {
         	return -EAGAIN;
         }
-        printk("in wait_sem sem->count = %d, is_block = %d, current_thread = %d\n", sem->sem_count, is_block, current_thread);
+        //printk("in wait_sem sem->count = %d, is_block = %d, current_thread = %d\n", sem->sem_count, is_block, current_thread);
 	if (sem->sem_count == 0) {
 		if (is_block == 1) {
 			list_append(&current_thread->sem_queue_node, &sem->waiting_threads);
-			
+			current_thread->thread_ctx->sc->budget = 0;
 			current_thread->thread_ctx->state = TS_WAITING;
-			//struct thread * thread = rr_sched_choose_thread();
 			obj_put(sem);
-			rr_top();
-			sys_yield();
 			sched();
-			//printk("after_eret_to_thread thread = %d\n", thread);
 			eret_to_thread(switch_context());
 			
 			return -EAGAIN;

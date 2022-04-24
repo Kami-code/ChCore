@@ -32,19 +32,11 @@ static int check_vmr_intersect(struct vmspace *vmspace,
         struct vmregion *vmr;
         vaddr_t new_start, start;
         vaddr_t new_end, end;
-
-printk("1111");
         if (unlikely(vmr_to_add->size == 0))
                 return 0;
-
-printk("2222");
         new_start = vmr_to_add->start;
         new_end = new_start + vmr_to_add->size - 1;
-
-printk("3333");
         for_each_in_list (vmr, struct vmregion, node, &(vmspace->vmr_list)) {
-        
-printk("4444");
                 start = vmr->start;
                 end = start + vmr->size;
                 if (!((new_start >= end) || (new_end <= start))) {
@@ -73,14 +65,11 @@ static int is_vmr_in_vmspace(struct vmspace *vmspace, struct vmregion *vmr)
 
 static int add_vmr_to_vmspace(struct vmspace *vmspace, struct vmregion *vmr)
 {
-printk("111");
         if (check_vmr_intersect(vmspace, vmr) != 0) {
                 kwarn("Detecting: vmr overlap\n");
                 BUG_ON(1);
                 return -EINVAL;
         }
-
-printk("222");
         list_add(&(vmr->node), &(vmspace->vmr_list));
         return 0;
 }
