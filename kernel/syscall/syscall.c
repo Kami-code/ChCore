@@ -26,14 +26,15 @@ void sys_null_placeholder(long arg)
 void sys_putc(char ch)
 {
         /* LAB 3 TODO BEGIN */
-
+	uart_send(ch);
         /* LAB 3 TODO END */
 }
 
 u32 sys_getc(void)
 {
         /* LAB 3 TODO BEGIN */
-
+	u32 r = uart_recv();
+	return r;
         /* LAB 3 TODO END */
 }
 
@@ -71,7 +72,7 @@ u32 sys_get_cpu_id()
 {
         u32 cpuid = 0;
         /* LAB 4 TODO BEGIN */
-
+	return smp_get_cpu_id();
         /* LAB 4 TODO END */
         return cpuid;
 }

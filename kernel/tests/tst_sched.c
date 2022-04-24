@@ -385,8 +385,11 @@ void tst_sched_timer(void)
 
 void tst_sched_preemptive(void)
 {
+	kinfo("Enter tst_sched_preemptive!\n");
         tst_sched_budget();
+        kinfo("Pass tst_sched_budget!\n");
         tst_sched_timer();
+        kinfo("Pass tst_sched_timer!\n");
         if (smp_get_cpu_id() == 0) {
                 kinfo("Pass tst_sched_preemptive!\n");
         }

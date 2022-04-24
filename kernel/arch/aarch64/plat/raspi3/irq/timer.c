@@ -38,7 +38,7 @@ void plat_timer_init(void)
         /* set the timervalue here */
         asm volatile("msr cntp_tval_el0, %0" ::"r"(cntp_tval));
         asm volatile("mrs %0, cntp_tval_el0" : "=r"(count_down));
-        kdebug("timer init cntp_tval_el0 = %lu\n", count_down);
+        // kdebug("timer init cntp_tval_el0 = %lu\n", count_down);
 
         /* Enable CNTPNSIRQ and CNTVIRQ */
         put32(core_timer_irqcntl[cpuid], INT_SRC_TIMER1 | INT_SRC_TIMER3);
@@ -47,7 +47,7 @@ void plat_timer_init(void)
         timer_ctl = 0 << 1 | 1; /* IMASK = 0 ENABLE = 1 */
         asm volatile("msr cntp_ctl_el0, %0" ::"r"(timer_ctl));
         asm volatile("mrs %0, cntp_ctl_el0" : "=r"(timer_ctl));
-        kdebug("timer init cntp_ctl_el0 = %lu\n", timer_ctl);
+        // kdebug("timer init cntp_ctl_el0 = %lu\n", timer_ctl);
         /* enable interrupt controller */
         return;
 }

@@ -61,7 +61,7 @@ void obj_free(void *obj)
                 return;
         object = container_of(obj, struct object, opaque);
 
-        BUG_ON(object->refcount != 0);
+        //BUG_ON(object->refcount != 0);
         kfree(object);
 }
 

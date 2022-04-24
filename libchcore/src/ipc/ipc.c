@@ -15,9 +15,14 @@ int client_ipc_num = 0; // Current clients number
 int ipc_register_server(server_handler server_handler)
 {
         int ret = 0;
-        struct ipc_vm_config vm_config;
+        //struct ipc_vm_config vm_config;
         /* LAB 4 TODO BEGIN: fill vm_config */
-
+        struct ipc_vm_config vm_config = {
+		.stack_base_addr = SERVER_STACK_BASE,
+		.stack_size = SERVER_STACK_SIZE,
+		.buf_base_addr = SERVER_BUF_BASE,
+		.buf_size = SERVER_BUF_SIZE,
+	};
         /* LAB 4 TODO END */
         ret = __chcore_sys_register_server(
                 (u64)server_handler, MAX_CLIENT, (u64)&vm_config);
@@ -32,13 +37,16 @@ struct ipc_struct *ipc_register_client(int server_thread_cap)
         struct ipc_struct *ipc_struct = malloc(sizeof(struct ipc_struct));
         // Assign a unique id for each client
         int client_id = __sync_fetch_and_add(&client_ipc_num, 1);
-        struct ipc_vm_config vm_config;
+        //struct ipc_vm_config vm_config;
 
         if (client_id >= MAX_CLIENT)
                 return NULL;
 
         /* LAB 4 TODO BEGIN: fill vm_config according to client_id */
-
+	struct ipc_vm_config vm_config = {
+		.buf_base_addr = CLIENT_BUF_BASE + client_id * CLIENT_BUF_SIZE,
+		.buf_size = CLIENT_BUF_SIZE,
+	};
         /* LAB 4 TODO END */
         while (retry_times) {
                 conn_cap = __chcore_sys_register_client((u32)server_thread_cap,
@@ -116,7 +124,7 @@ int ipc_set_msg_data(struct ipc_msg *ipc_msg, void *data, u64 offset, u64 len)
 
         /* Lab4: memcpy the data to correct offset in ipc_msg */
         /* LAB 4 TODO BEGIN */
-
+	memcpy(ipc_get_msg_data(ipc_msg) + offset, data, len);
         /* LAB 4 TODO END */
         return 0;
 }

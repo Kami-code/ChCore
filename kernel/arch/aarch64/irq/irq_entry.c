@@ -38,7 +38,10 @@ void handle_entry_c(int type, u64 esr, u64 address)
 {
         /* Acquire the big kernel lock, if the exception is not from kernel */
         /* LAB 4 TODO BEGIN */
-
+	if(type > ERROR_EL1h)
+	{
+		lock_kernel();
+	}
         /* LAB 4 TODO END */
 
         /* ec: exception class */
@@ -145,11 +148,13 @@ void handle_irq(int type)
         if (type >= SYNC_EL0_64
             || current_thread->thread_ctx->type == TYPE_IDLE) {
                 /* LAB 4 TODO BEGIN */
-
+		lock_kernel();
                 /* LAB 4 TODO END */
         }
 
+
         plat_handle_irq();
+        sched_handle_timer_irq();
         sched();
         eret_to_thread(switch_context());
 }

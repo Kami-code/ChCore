@@ -1,0 +1,104 @@
+[1mCleaning...[0m
+[1mConfiguring CMake...[0m
+loading initial cache file scripts/build/cmake/LoadConfigDefault.cmake
+-- CHCORE_CROSS_COMPILE: aarch64-linux-gnu-
+-- CHCORE_KERNEL_DEBUG: ON
+-- CHCORE_KERNEL_TEST: ON
+-- CHCORE_PLAT: raspi3
+-- CHCORE_VERBOSE_BUILD: OFF
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /chos/build
+Scanning dependencies of target clean-all
+Scanning dependencies of target kernel-clean
+Built target kernel-clean
+Built target clean-all
+[0;32m[1mSucceeded to clean all targets[0m
+[1mConfiguring CMake...[0m
+loading initial cache file scripts/build/cmake/LoadConfigAsk.cmake
+-- The C compiler identification is GNU 9.3.0
+-- The CXX compiler identification is GNU 9.3.0
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- CHCORE_CROSS_COMPILE: aarch64-linux-gnu-
+-- CHCORE_KERNEL_DEBUG: ON
+-- CHCORE_KERNEL_TEST: ON
+-- CHCORE_PLAT: raspi3
+-- CHCORE_VERBOSE_BUILD: OFF
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /chos/build
+[0;32m[1mConfig syned to `.config` file.[0m
+[1mBuilding...[0m
+Scanning dependencies of target kernel
+[ 12%] Creating directories for 'kernel'
+[ 25%] No download step for 'kernel'
+[ 37%] No patch step for 'kernel'
+[ 50%] No update step for 'kernel'
+[ 62%] Performing configure step for 'kernel'
+loading initial cache file /chos/build/kernel-prefix/tmp/kernel-cache-.cmake
+-- CHCORE_PROJECT_DIR: /chos
+-- CHCORE_PROJECT_DIR: /chos
+-- The C compiler identification is GNU 9.3.0
+-- The ASM compiler identification is GNU
+-- Found assembler: /usr/bin/aarch64-linux-gnu-gcc
+-- Check for working C compiler: /usr/bin/aarch64-linux-gnu-gcc
+-- Check for working C compiler: /usr/bin/aarch64-linux-gnu-gcc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- CMAKE_TOOLCHAIN_FILE: /chos/scripts/build/cmake/Toolchains/kernel.cmake
+-- CMAKE_MODULE_PATH: /chos/scripts/build/cmake/Modules
+-- CMAKE_CROSSCOMPILING: TRUE
+-- CMAKE_SYSTEM_PROCESSOR: aarch64
+-- CMAKE_SYSTEM_NAME: Generic
+-- CMAKE_HOST_SYSTEM_PROCESSOR: x86_64
+-- CMAKE_HOST_SYSTEM_NAME: Linux
+-- CMAKE_BUILD_TYPE: Debug
+-- CMAKE_ASM_COMPILER: /usr/bin/aarch64-linux-gnu-gcc
+-- CMAKE_C_COMPILER: /usr/bin/aarch64-linux-gnu-gcc
+-- CMAKE_C_OUTPUT_EXTENSION: .obj
+-- CMAKE_LINKER: /usr/bin/aarch64-linux-gnu-ld
+-- CMAKE_SOURCE_DIR: /chos/kernel
+-- CMAKE_BINARY_DIR: /chos/kernel/_build
+-- CMAKE_PREFIX_PATH: 
+-- CMAKE_INSTALL_PREFIX: /chos/build
+-- CHCORE_ARCH: aarch64
+-- CHCORE_CROSS_COMPILE: aarch64-linux-gnu-
+-- CHCORE_KERNEL_DEBUG: ON
+-- CHCORE_KERNEL_TEST: ON
+-- CHCORE_PLAT: raspi3
+-- CHCORE_PROJECT_DIR: /chos
+-- CHCORE_VERBOSE_BUILD: OFF
+-- init_objects: CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/init/start.S.obj;CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/init/mmu.c.obj;CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/init/tools.S.obj;CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/init/init_c.c.obj;CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/peripherals/uart.c.obj
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /chos/kernel/_build
+[ 75%] Performing build step for 'kernel'
+Scanning dependencies of target linker.ld
+[  0%] Built target linker.ld
+Scanning dependencies of target kernel.img
+[  8%] Building ASM object CMakeFiles/kernel.img.dir/arch/aarch64/head.S.obj
+[  8%] Building C object CMakeFiles/kernel.img.dir/arch/aarch64/main.c.obj
+[ 13%] Building ASM object CMakeFiles/kernel.img.dir/arch/aarch64/tools.S.obj
+[ 17%] Building ASM object CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/init/start.S.obj
+[ 21%] Building C object CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/init/mmu.c.obj
+[ 26%] Building ASM object CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/init/tools.S.obj
+[ 30%] Building C object CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/init/init_c.c.obj
+[ 34%] Building C object CMakeFiles/kernel.img.dir/arch/aarch64/boot/raspi3/peripherals/uart.c.obj
+[ 39%] Building ASM object CMakeFiles/kernel.img.dir/arch/aarch64/mm/memcpy.S.obj
+[ 43%] Building ASM object CMakeFiles/kernel.img.dir/arch/aarch64/mm/memmove.S.obj
+[ 47%] Building C object CMakeFiles/kernel.img.dir/arch/aarch64/mm/memset.c.obj
+[ 52%] Building C object CMakeFiles/kernel.img.dir/arch/aarch64/mm/page_table.c.obj
+[ 56%] Building ASM object CMakeFiles/kernel.img.dir/arch/aarch64/mm/page_table.S.obj
