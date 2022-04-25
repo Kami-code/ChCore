@@ -154,8 +154,13 @@ void sched_handle_timer_irq(void)
 {
         /* LAB 4 TODO BEGIN */
 	struct thread* thread = current_thread;
-	if (thread != NULL && thread->thread_ctx != NULL && thread->thread_ctx->sc->budget > 0) {
-        	thread->thread_ctx->sc->budget--;
+	if (thread != NULL && thread->thread_ctx != NULL) {
+		if (thread->thread_ctx->sc->budget > 0) {
+			thread->thread_ctx->sc->budget--;
+		}
+        	if (thread->thread_ctx->affinity != thread->thread_ctx->cpuid) {
+        		thread->thread_ctx->sc->budget = 0;
+        	}
     	}
         /* LAB 4 TODO END */
 }

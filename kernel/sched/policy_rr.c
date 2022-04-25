@@ -62,6 +62,7 @@ int rr_sched_enqueue(struct thread *thread)
 
 	if (affinity == NO_AFF)
 	{
+		//affinity = plat_get_mono_time() % PLAT_CPU_NUM;
 		affinity = smp_get_cpu_id();
 	}
 
@@ -176,14 +177,13 @@ int rr_sched(void)
 	{
 		if (thread->thread_ctx->cpuid != thread->thread_ctx->affinity) {
 			thread->thread_ctx->sc->budget = 0;
-			
 		}
 		
-		if (thread->thread_ctx->sc->budget > 0)
+		if (thread->thread_ctx->state == TS_RUNNING && thread->thread_ctx->sc->budget > 0)
 		{
 			return 1;
 		}
-		else if (thread->thread_ctx->state == TS_RUNNING)
+		else if (thread->thread_ctx->state == TS_RUNNING && thread->thread_ctx->sc->budget == 0)
 		{
 			thread->thread_ctx->sc->budget = DEFAULT_BUDGET;
 			if (thread->thread_ctx->type == TYPE_IDLE)

@@ -26,7 +26,7 @@ void do_page_fault(u64 esr, u64 fault_ins_addr)
         case DFSC_TRANS_FAULT_L1:
         case DFSC_TRANS_FAULT_L2:
         case DFSC_TRANS_FAULT_L3: {
-		print_thread(current_thread);
+		//print_thread(current_thread);
                 int ret;
                 /* LAB 3 TODO BEGIN */
 		ret = handle_trans_fault(current_thread->vmspace,
