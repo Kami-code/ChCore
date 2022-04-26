@@ -34,7 +34,6 @@ static u64 get_next_tick_delta()
 
 void handle_timer_irq(void)
 {
-	//printk("timer interrupt! core = %d\n", smp_get_cpu_id());
         u64 current_tick, tick_delta;
 
         /* Remove the thread to wakeup from sleep list */

@@ -169,10 +169,8 @@ void sched_handle_timer_irq(void)
 
 void sys_yield(void)
 {
-	//printk("successfully calling yield!!!===============================================\n");
         /* LAB 4 TODO BEGIN */
 	current_thread->thread_ctx->sc->budget = 0;
-	//printk("current_thread budget = %d, affinity = %d\n", current_thread->thread_ctx->sc->budget, current_thread->thread_ctx->affinity);
     	sched();
     	eret_to_thread(switch_context());
         /* LAB 4 TODO END */
