@@ -40,7 +40,7 @@ static u64 get_next_tick_delta()
         u64 waiting_tick;
 
         /* Default tick */
-        waiting_tick = TICK_MS * 1000 * tick_per_us;
+        waiting_tick = TICK_MS * 10 * tick_per_us;
         return waiting_tick;
 }
 

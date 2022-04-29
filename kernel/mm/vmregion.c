@@ -44,13 +44,10 @@ static int check_vmr_intersect(struct vmspace *vmspace,
         struct vmregion *vmr;
         vaddr_t new_start, start;
         vaddr_t new_end, end;
-
         if (unlikely(vmr_to_add->size == 0))
                 return 0;
-
         new_start = vmr_to_add->start;
         new_end = new_start + vmr_to_add->size - 1;
-
         for_each_in_list (vmr, struct vmregion, node, &(vmspace->vmr_list)) {
                 start = vmr->start;
                 end = start + vmr->size;
@@ -85,7 +82,6 @@ static int add_vmr_to_vmspace(struct vmspace *vmspace, struct vmregion *vmr)
                 BUG_ON(1);
                 return -EINVAL;
         }
-
         list_add(&(vmr->node), &(vmspace->vmr_list));
         return 0;
 }
@@ -207,17 +203,15 @@ int vmspace_map_range(struct vmspace *vmspace, vaddr_t va, size_t len,
 {
         struct vmregion *vmr;
         int ret;
-
+	
         /* Check whether the pmo type is supported */
         BUG_ON((pmo->type != PMO_DATA) && (pmo->type != PMO_DATA_NOCACHE)
                && (pmo->type != PMO_ANONYM) && (pmo->type != PMO_DEVICE)
                && (pmo->type != PMO_SHM) && (pmo->type != PMO_FORBID));
-
         /* Align a vmr to PAGE_SIZE */
         va = ROUND_DOWN(va, PAGE_SIZE);
         if (len < PAGE_SIZE)
                 len = PAGE_SIZE;
-
         vmr = alloc_vmregion();
         if (!vmr) {
                 ret = -ENOMEM;
@@ -231,12 +225,10 @@ int vmspace_map_range(struct vmspace *vmspace, vaddr_t va, size_t len,
         } else if (unlikely(pmo->type == PMO_DATA_NOCACHE)) {
                 vmr->perm |= VMR_NOCACHE;
         }
-
         /* Currently, one vmr has exactly one pmo */
         vmr->pmo = pmo;
 
         ret = add_vmr_to_vmspace(vmspace, vmr);
-
         if (ret < 0) {
                 kwarn("add_vmr_to_vmspace fails\n");
                 goto out_free_vmr;

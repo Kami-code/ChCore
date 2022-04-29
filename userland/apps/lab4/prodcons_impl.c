@@ -26,15 +26,15 @@ void *producer(void *arg)
 {
         int new_msg;
         int i = 0;
-
+	
         while (i < PROD_ITEM_CNT) {
                 /* LAB 4 TODO BEGIN */
-
+		__chcore_sys_wait_sem(empty_slot, 1);	// 1 means block until fulfill
                 /* LAB 4 TODO END */
                 new_msg = produce_new();
                 buffer_add_safe(new_msg);
                 /* LAB 4 TODO BEGIN */
-
+		__chcore_sys_signal_sem(filled_slot);
                 /* LAB 4 TODO END */
                 i++;
         }
@@ -49,12 +49,11 @@ void *consumer(void *arg)
 
         while (i < COSM_ITEM_CNT) {
                 /* LAB 4 TODO BEGIN */
-
+		__chcore_sys_wait_sem(filled_slot, 1);	// 1 means block until fulfill
                 /* LAB 4 TODO END */
                 cur_msg = buffer_remove_safe();
-
                 /* LAB 4 TODO BEGIN */
-
+		__chcore_sys_signal_sem(empty_slot);
                 /* LAB 4 TODO END */
                 consume_msg(cur_msg);
                 i++;

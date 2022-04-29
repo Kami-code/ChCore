@@ -38,19 +38,23 @@ void handle_entry_c(int type, u64 esr, u64 address)
 {
         /* Acquire the big kernel lock, if the exception is not from kernel */
         /* LAB 4 TODO BEGIN */
-
+	if(type > ERROR_EL1h)
+	{
+		lock_kernel();
+	}
         /* LAB 4 TODO END */
 
         /* ec: exception class */
         u32 esr_ec = GET_ESR_EL1_EC(esr);
 
+/*
         kdebug("Exception type: %d, ESR: 0x%lx, Fault address: 0x%lx, "
                "EC 0b%b\n",
                type,
                esr,
                address,
                esr_ec);
-
+*/
         /* Currently, ChCore only handles a part of IRQs */
         if (type < SYNC_EL0_64) {
                 if (esr_ec != ESR_EL1_EC_DABT_CEL) {
@@ -96,14 +100,14 @@ void handle_entry_c(int type, u64 esr, u64 address)
                 kdebug("PC alignment fault exception\n");
                 break;
         case ESR_EL1_EC_DABT_LEL:
-                kdebug("Data Abort from a lower Exception level\n");
+                // kdebug("Data Abort from a lower Exception level\n");
                 /* Handle faults caused by data access.
                  * We only consider page faults for now.
                  */
                 do_page_fault(esr, address);
                 return;
         case ESR_EL1_EC_DABT_CEL:
-                kdebug("Data Abort from a current Exception level\n");
+                // kdebug("Data Abort from a current Exception level\n");
                 do_page_fault(esr, address);
                 return;
         case ESR_EL1_EC_SP_ALIGN:
@@ -123,12 +127,12 @@ void handle_entry_c(int type, u64 esr, u64 address)
                 break;
         }
 
-        kinfo("Exception type: %d, ESR: 0x%lx, Fault address: 0x%lx, "
-              "EC 0b%b\n",
-              type,
-              esr,
-              address,
-              esr_ec);
+        //kinfo("Exception type: %d, ESR: 0x%lx, Fault address: 0x%lx, "
+        //      "EC 0b%b\n",
+        //      type,
+        //      esr,
+        //      address,
+        //      esr_ec);
 
         BUG_ON(1);
 }
@@ -145,11 +149,13 @@ void handle_irq(int type)
         if (type >= SYNC_EL0_64
             || current_thread->thread_ctx->type == TYPE_IDLE) {
                 /* LAB 4 TODO BEGIN */
-
+		lock_kernel();
                 /* LAB 4 TODO END */
         }
 
+
         plat_handle_irq();
+        sched_handle_timer_irq();
         sched();
         eret_to_thread(switch_context());
 }

@@ -109,7 +109,37 @@ static u64 load_binary(struct cap_group *cap_group, struct vmspace *vmspace,
                         seg_sz = elf->p_headers[i].p_memsz;
                         p_vaddr = elf->p_headers[i].p_vaddr;
                         /* LAB 3 TODO BEGIN */
+			seg_map_sz = ROUND_UP(p_vaddr + seg_sz, PAGE_SIZE) - ROUND_DOWN(p_vaddr, PAGE_SIZE);
+			
 
+			pmo = obj_alloc(TYPE_PMO, sizeof(*pmo));
+			if (!pmo) {
+				r = -ENOMEM;
+				goto out_free_cap;
+			}
+			pmo_init(pmo, PMO_DATA, seg_map_sz, 0);
+			pmo_cap[i] = cap_alloc(cap_group, pmo, 0);
+			if (pmo_cap[i] < 0) {
+				r = pmo_cap[i];
+				goto out_free_cap;
+			}
+
+			/*
+			 * Lab3: Your code here
+			 * You should copy data from the elf into the physical memory in pmo.
+			 * The physical address of a pmo can be get from pmo->start.
+			 */
+
+			memcpy((void *)(phys_to_virt(pmo->start) + (p_vaddr - ROUND_DOWN(p_vaddr, PAGE_SIZE))),
+				 bin + elf->p_headers[i].p_offset, elf->p_headers[i].p_filesz);
+
+				
+			flags = PFLAGS2VMRFLAGS(elf->p_headers[i].p_flags);
+			
+
+			ret = vmspace_map_range(vmspace,
+						ROUND_DOWN(p_vaddr, PAGE_SIZE),
+						seg_map_sz, flags, pmo);
                         /* LAB 3 TODO END */
                         BUG_ON(ret != 0);
                 }
@@ -161,7 +191,6 @@ static int __create_root_thread(struct cap_group *cap_group, u64 stack_base,
 
         init_vmspace = obj_get(cap_group, VMSPACE_OBJ_ID, TYPE_VMSPACE);
         obj_put(init_vmspace);
-
         /* Allocate and setup a user stack for the init thread */
         stack_pmo_cap =
                 create_pmo(stack_size, PMO_ANONYM, cap_group, &stack_pmo);
@@ -169,42 +198,35 @@ static int __create_root_thread(struct cap_group *cap_group, u64 stack_base,
                 ret = stack_pmo_cap;
                 goto out_fail;
         }
-
         ret = vmspace_map_range(init_vmspace,
                                 stack_base,
                                 stack_size,
                                 VMR_READ | VMR_WRITE,
                                 stack_pmo);
         BUG_ON(ret != 0);
-
         /* Allocate the init thread */
         thread = obj_alloc(TYPE_THREAD, sizeof(*thread));
         if (!thread) {
                 ret = -ENOMEM;
                 goto out_free_cap_pmo;
         }
-
         /* Fill the parameter of the thread struct */
         pc = load_binary(cap_group, init_vmspace, bin_start, &meta);
         stack = stack_base + stack_size;
-
+	kinfo("6\n");
         /* Allocate a physical for the main stack for prepare_env */
         kva = (vaddr_t)get_pages(0);
         BUG_ON(kva == 0);
         commit_page_to_pmo(stack_pmo,
                            stack_size / PAGE_SIZE - 1,
                            virt_to_phys((void *)kva));
-
         prepare_env((char *)kva, stack, &meta, bin_name);
         stack -= ENV_SIZE;
-
         ret = thread_init(thread, cap_group, stack, pc, prio, type, aff);
         BUG_ON(ret != 0);
-
         /* Add the thread into the thread_list of the cap_group */
         list_add(&thread->node, &cap_group->thread_list);
         cap_group->thread_cnt += 1;
-
         /* Allocate the cap for the init thread */
         thread_cap = cap_alloc(cap_group, thread, 0);
         if (thread_cap < 0) {
@@ -277,11 +299,11 @@ void create_root_thread(void)
                                           &__binary_root_start,
                                           ROOT_NAME);
         test_root_thread_after_create(root_cap_group, thread_cap);
-
         root_thread = obj_get(root_cap_group, thread_cap, TYPE_THREAD);
         /* Enqueue: put init thread into the ready queue */
         BUG_ON(sched_enqueue(root_thread));
         obj_put(root_thread);
+
 }
 
 /*
@@ -399,7 +421,15 @@ void sys_thread_exit(void)
         printk("\nBack to kernel.\n");
 #endif
         /* LAB 3 TODO BEGIN */
+	struct thread *target = current_thread;
 
+	// kinfo("sys_exit with value %d\n", ret);
+	/* Set thread state */
+	target->thread_ctx->state = TS_EXIT;
+	obj_free(target);
+
+	/* Set current running thread to NULL */
+	current_thread = NULL;
         /* LAB 3 TODO END */
         /* Reschedule */
         sched();
@@ -436,7 +466,13 @@ int sys_set_affinity(u64 thread_cap, s32 aff)
         }
 
         /* LAB 4 TODO BEGIN */
-
+	if(thread == NULL || thread->thread_ctx == NULL)
+	{
+		return NO_AFF;
+	}
+	else{
+		thread->thread_ctx->affinity = aff;
+	}
         /* LAB 4 TODO END */
         if (thread_cap != -1)
                 obj_put((void *)thread);
@@ -459,7 +495,13 @@ s32 sys_get_affinity(u64 thread_cap)
         if (thread == NULL)
                 return -ECAPBILITY;
         /* LAB 4 TODO BEGIN */
-
+	if(thread == NULL || thread->thread_ctx == NULL)
+	{
+		return NO_AFF;
+	}
+	else{
+		aff = thread->thread_ctx->affinity ;
+	}
         /* LAB 4 TODO END */
 
         if (thread_cap != -1)
