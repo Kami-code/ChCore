@@ -115,15 +115,15 @@ struct thread *rr_sched_choose_thread(void)
 {
         struct thread *thread = NULL;
         /* LAB 4 TODO BEGIN */
-	u32 cpu_id = smp_get_cpu_id();
-	if (list_empty(&rr_ready_queue_meta[cpu_id].queue_head))
-	{
-		return &idle_threads[cpu_id];
-	}
-	else
-	{
-		thread = list_entry(rr_ready_queue_meta[cpu_id].queue_head.next, struct thread, ready_queue_node);
-		if (thread->thread_ctx->state == TS_READY &&
+        u32 cpu_id = smp_get_cpu_id();
+        if (list_empty(&rr_ready_queue_meta[cpu_id].queue_head))
+        {
+                return &idle_threads[cpu_id];
+        }
+        else
+        {
+                thread = list_entry(rr_ready_queue_meta[cpu_id].queue_head.next, struct thread, ready_queue_node);
+                if (thread->thread_ctx->state == TS_READY &&
 			thread->thread_ctx->type != TYPE_IDLE)
 		{
 			list_del(rr_ready_queue_meta[cpu_id].queue_head.next);

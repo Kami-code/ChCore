@@ -74,7 +74,6 @@ u32 sys_get_cpu_id()
         /* LAB 4 TODO BEGIN */
 	return smp_get_cpu_id();
         /* LAB 4 TODO END */
-        return cpuid;
 }
 
 const void *syscall_table[NR_SYSCALL] = {
