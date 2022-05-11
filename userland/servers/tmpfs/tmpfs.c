@@ -22,6 +22,9 @@
 #include "tmpfs.h"
 #include "tmpfs_ops.h"
 
+#define ROUND_UP(x, n)   (((x) + (n)-1) & ~((n)-1))
+#define ROUND_DOWN(x, n) ((x) & ~((n)-1))
+
 struct inode *tmpfs_root = NULL;
 struct dentry *tmpfs_root_dent = NULL;
 struct id_manager fidman;
@@ -29,6 +32,9 @@ struct fid_record fid_records[MAX_NR_FID_RECORDS];
 struct server_entry *server_entrys[MAX_SERVER_ENTRY_NUM];
 struct list_head fs_vnode_list;
 bool mounted;
+
+/* previous definition of some function */
+struct dentry *tfs_lookup(struct inode *dir, const char *name, size_t len);
 
 /*
  * Helper functions to calucate hash value of string
@@ -152,7 +158,19 @@ static int tfs_mknod(struct inode *dir, const char *name, size_t len, int mkdir)
 		return -ENOENT;
 	}
 	/* LAB 5 TODO BEGIN */
-
+	if (tfs_lookup(dir, name, len) != NULL) return -EEXIST;	//如果文件存在的情况，返回-EEXIST
+	// 我们根据mkdir这个标志来判断是创建文件夹还是创建文件
+	if (mkdir) inode = new_dir();
+	else inode = new_reg();
+	if (IS_ERR(inode)) return -ENOMEM;	// 创建失败的情况
+	dent = new_dent(inode, name, len);	// 我们根据inode和名字初始化目录项
+	if (IS_ERR(dent)) {			// 创建失败的情况
+		free(inode);
+		return -ENOMEM;
+	}
+	init_hlist_node(&dent->node);
+	htable_add(&(dir->dentries), dent->name.hash, &dent->node);
+	// 把目录项添加到当前文件夹下的哈希表里
 	/* LAB 5 TODO END */
 
 	return 0;
@@ -222,7 +240,34 @@ int tfs_namex(struct inode **dirat, const char **name, int mkdir_p)
 	// `tfs_lookup` and `tfs_mkdir` are useful here
 
 	/* LAB 5 TODO BEGIN */
+	for (i = 0; i < MAX_FILENAME_LEN; ++i) { // 得到名字的第一部分
+		buff[i] = (*name)[i];
+		if (buff[i]) {
+			if (buff[i] == '/') {
+				buff[i] = '\0'; break;
+			}
+			else continue;
+		}
+		else {
+			buff[i] = '\0'; break;
+		}
+		
+	};
+	// 在dirat目录下找到对应的目录项
+	dent = tfs_lookup(*dirat, buff, i);
+	if (!(*name)[i]) return dent ? 0 : -ENOENT;
+	if (!dent) {	// 目录项不存在的情况，如果设置了mkdir_p，那么我们就创建这个目录项
+		if (mkdir_p) { err = tfs_mkdir(*dirat, buff, i); if (err < 0) return err; dent = tfs_lookup(*dirat, buff, i); } 
+		else return -ENOENT;
+	}
+	(*name) += i;	// 向后移动，我们继续查找下一级目录
+	if (**name) { 	// 存在文件或者有下一级目录
+		*dirat = dent->inode; while ((**name) == '/') (*name)++;
+		if (**name) return tfs_namex(dirat, name, mkdir_p); 	//如果存在子目录，我们递归地去找它
+		else return 0; 					// 当前name名字为空，也就是我们要查找的是目录
+	}
 
+	if (!**name) return -EINVAL;
 	/* LAB 5 TODO END */
 
 	/* we will never reach here? */
@@ -296,13 +341,26 @@ ssize_t tfs_file_write(struct inode * inode, off_t offset, const char *data,
 
 	u64 page_no, page_off;
 	u64 cur_off = offset;
-	size_t to_write;
+	size_t to_write, pending_write;
 	void *page;
 
 	/* LAB 5 TODO BEGIN */
-
+	u64 before_page = ROUND_UP(inode->size, PAGE_SIZE) / PAGE_SIZE;	// 我们先得到原先的文件占据了多少个内存页
+	for (to_write = size; to_write > 0; ) {
+		page_no = ROUND_DOWN(cur_off, PAGE_SIZE) / PAGE_SIZE;
+		if (before_page == 0 || page_no >= before_page) { // 创建一个内存页
+			page = malloc(PAGE_SIZE);
+			if (!page || radix_add(&inode->data, page_no * PAGE_SIZE, page) < 0) goto error;
+		}
+		page = radix_get(&inode->data, page_no * PAGE_SIZE);	//得到一个内存页
+		if (!page) goto error; page_off = cur_off % PAGE_SIZE;
+		pending_write = MIN(PAGE_SIZE - page_off, to_write);	// 复制数据的长度等于内存页大小-offset或者待写的长度
+		memcpy((char*) page + page_off, data, pending_write);	// 把我们要写的数据复制到内存页中
+		cur_off = cur_off + pending_write; to_write = to_write - pending_write; data = data + pending_write;
+	}
+	if (inode->size < cur_off) inode->size = cur_off;
 	/* LAB 5 TODO END */
-
+error:
 	return cur_off - offset;
 }
 
@@ -322,9 +380,19 @@ ssize_t tfs_file_read(struct inode * inode, off_t offset, char *buff,
 	void *page;
 
 	/* LAB 5 TODO BEGIN */
-
+	size_t pending_read;
+	to_read = MIN(inode->size - offset, size);
+	while (to_read > 0) {
+		page_no = ROUND_DOWN(offset, PAGE_SIZE) / PAGE_SIZE;
+		page = radix_get(&inode->data, page_no * PAGE_SIZE);	//得到一个内存页
+		if (!page) goto error;
+		page_off = cur_off % PAGE_SIZE;
+		pending_read = MIN(PAGE_SIZE - page_off, to_read);	// 复制数据的长度等于内存页大小-offset或者待写的长度
+		memcpy(buff, (char*) page + page_off, pending_read);
+		cur_off = cur_off + pending_read; to_read = to_read - pending_read; buff = buff + pending_read;
+	}
 	/* LAB 5 TODO END */
-
+error:
 	return cur_off - offset;
 }
 
@@ -347,12 +415,32 @@ int tfs_load_image(const char *start)
 	cpio_extract(start, "/");
 
 	for (f = g_files.head.next; f; f = f->next) {
-	/* LAB 5 TODO BEGIN */
-
-	/* LAB 5 TODO END */
+		/* LAB 5 TODO BEGIN */
+		dirat = tmpfs_root; leaf = f->name;
+		err = tfs_namex(&dirat, &leaf, 0);
+		if (err < 0 && err != -ENOENT) return err;
+		int f_type = f->header.c_mode & 0170000;	// 我们得到类型
+		if (err == -ENOENT) {
+			if (f_type == 0100000) {	// 文件不存在的情况，创建文件
+				err = tfs_creat(dirat, leaf, strlen(leaf));
+			}
+			else if (f_type == 0040000) {	// 目录不存在的情况，创建目录
+				err = tfs_mkdir(dirat, leaf, strlen(leaf));
+			}
+			else err = -EPFNOSUPPORT;	// 不支持的文件类型
+			if (err < 0) goto error;
+		}
+		dent = tfs_lookup(dirat, leaf, strlen(leaf));	// 如果是文件，我们写入f的数据	
+		if (f_type == 0100000) {
+			err = tfs_file_write(dent->inode, 0, f->data, f->header.c_filesize);
+			if (err < 0) goto error;
+		}
+		/* LAB 5 TODO END */
 	}
 
 	return 0;
+error:
+	return err;
 }
 
 static int dirent_filler(void **dirpp, void *end, char *name, off_t off,

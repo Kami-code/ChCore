@@ -426,7 +426,6 @@ void sys_thread_exit(void)
 	// kinfo("sys_exit with value %d\n", ret);
 	/* Set thread state */
 	target->thread_ctx->state = TS_EXIT;
-	obj_free(target);
 
 	/* Set current running thread to NULL */
 	current_thread = NULL;

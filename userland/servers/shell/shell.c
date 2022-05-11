@@ -120,24 +120,72 @@ void demo_getdents(int fd)
 
 int alloc_fd() 
 {
-	static int cnt = 0;
-	return ++cnt;
+	static int global_fd = 0;
+	return ++global_fd;
 }
 
 int do_complement(char *buf, char *complement, int complement_time)
 {
-	int ret = 0, j = 0;
-	struct dirent *p;
-	char name[BUFLEN];
-	char scan_buf[BUFLEN];
-	int r = -1;
-	int offset;
-
 	/* LAB 5 TODO BEGIN */
+
+	char path[BUFLEN] = {0};
+	strcpy(path, "/");
+
+	ipc_msg_t* ipc_msg;
+	int ret;
+	struct fs_request* fr_ptr;
+
+	const int fd = 293; // This should be a fixed fd
+	/* allocate user fd to file pid */
+	ipc_msg = ipc_create_msg(fs_ipc_struct_for_shell, sizeof(struct fs_request), 1);
+	fr_ptr = (struct fs_request *) ipc_get_msg_data(ipc_msg);
+	fr_ptr->req = FS_REQ_OPEN;
+	fr_ptr->open.new_fd = fd;
+	
+	if (strlen(path) == 0) 
+		strcpy((void *) fr_ptr->open.pathname, "/");
+	else if (*path != '/') {
+		fr_ptr->open.pathname[0] = '/';
+		strcpy((void *) (fr_ptr->open.pathname + 1), path);
+	} else {
+		strcpy((void *) fr_ptr->open.pathname, path);
+	};
+	
+	ret = ipc_call(fs_ipc_struct_for_shell, ipc_msg);
+	ipc_destroy_msg(fs_ipc_struct_for_shell, ipc_msg);
+
+	// /* scan root dir */
+
+	if (ret == -ENOTDIR && *path != '.') {
+		printf("wrong path: %s\n", path);
+	} else {
+		/* reference to demo_getdents(int fd) */
+		char name[BUFLEN];
+		char scan_buf[BUFLEN];
+		int offset;
+		struct dirent* p;
+
+		int ret = getdents(fd, scan_buf, BUFLEN);
+
+		for (offset = 0; offset < ret; offset += p->d_reclen) {
+			p = (struct dirent *)(scan_buf + offset);
+			get_dent_name(p, name);
+			if (strcmp(name, ".") && complement_time-- == 0) {
+				strcpy(complement, name);
+				break;
+			};
+		};
+	};
+
+	/* Close File */
+	fr_ptr->req = FS_REQ_CLOSE;
+	fr_ptr->close.fd = fd;
+	ret = ipc_call(fs_ipc_struct_for_shell, ipc_msg);
+	ipc_destroy_msg(fs_ipc_struct_for_shell, ipc_msg);
 
 	/* LAB 5 TODO END */
 
-	return r;
+	return 0;
 }
 
 
@@ -150,10 +198,9 @@ char *readline(const char *prompt)
 {
 	static char buf[BUFLEN];
 
-	int i = 0, j = 0;
+	int i = 0;
 	signed char c = 0;
 	int ret = 0;
-	char complement[BUFLEN];
 	int complement_time = 0;
 
 	if (prompt != NULL) {
@@ -164,11 +211,51 @@ char *readline(const char *prompt)
     __chcore_sys_yield();
 		c = getch();
 
-	/* LAB 5 TODO BEGIN */
-	/* Fill buf and handle tabs with do_complement(). */
-
-	/* LAB 5 TODO END */
-	}
+		/* LAB 5 TODO BEGIN */
+		/* Fill buf and handle tabs with do_complement(). */
+		if (c < 0)
+			return NULL;
+		if (c != '\t')
+			complement_time = 0;
+		if (c == '\b') {
+			// Backspace
+			if (i > 0) {
+				i--;
+				__chcore_sys_putc('\b');
+				__chcore_sys_putc(' ');
+				__chcore_sys_putc('\b');
+			};
+			continue;
+		} else if (c == 127) {
+			// Delete
+			if (i > 0) {
+				i--;
+				__chcore_sys_putc('\b');
+				__chcore_sys_putc(' ');
+				__chcore_sys_putc('\b');
+			};
+			continue;
+		} else if (c == '\r' || c == '\n') {
+			// Return
+			__chcore_sys_putc('\n');
+			break;
+		} else if (c == '\t') {
+			char complement_buf[BUFLEN] = {0};
+			char complement[BUFLEN] = {0};
+			if (do_complement(complement_buf, complement, complement_time) == 0) {
+				complement_time++;
+				printf("%s", complement);
+			};
+			continue;
+		} else {
+			__chcore_sys_putc(c);
+		};
+		buf[i++] = c;
+		if (i == BUFLEN - 1)
+			break;
+		/* LAB 5 TODO END */
+	};
+	buf[i] = '\0';
 
 	return buf;
 }
@@ -183,9 +270,43 @@ void print_file_content(char* path)
 {
 
 	/* LAB 5 TODO BEGIN */
+	ipc_msg_t* ipc_msg;
+	int ret;
+	struct fs_request* fr_ptr;
+	char buf[BUFLEN];
 
+	int fd = alloc_fd();
+	/* allocate user fd to file pid */
+	ipc_msg = ipc_create_msg(fs_ipc_struct_for_shell, sizeof(struct fs_request), 1);
+	fr_ptr = (struct fs_request *) ipc_get_msg_data(ipc_msg);
+	fr_ptr->req = FS_REQ_OPEN;
+	fr_ptr->open.new_fd = fd;
+	
+	if (strlen(path) == 0) 
+		strcpy((void *) fr_ptr->open.pathname, "/");
+	else if (*path != '/') {
+		fr_ptr->open.pathname[0] = '/';
+		strcpy((void *) (fr_ptr->open.pathname + 1), path);
+	} else {
+		strcpy((void *) fr_ptr->open.pathname, path);
+	};
+	ret = ipc_call(fs_ipc_struct_for_shell, ipc_msg);
+	ipc_destroy_msg(fs_ipc_struct_for_shell, ipc_msg);
+
+	fr_ptr->req = FS_REQ_READ;
+	fr_ptr->read.fd = fd;
+	fr_ptr->read.count = BUFLEN;
+	ret = ipc_call(fs_ipc_struct_for_shell, ipc_msg);
+	if (ret < 0)
+		goto error;
+	memcpy(buf, ipc_get_msg_data(ipc_msg), ret);
+	printf("%s", buf);
+
+	ipc_destroy_msg(fs_ipc_struct_for_shell, ipc_msg);
 	/* LAB 5 TODO END */
-
+error:
+	// ipc_destroy_msg(fs_ipc_struct_for_shell, ipc_msg);
+	return;
 }
 
 
@@ -193,7 +314,51 @@ void fs_scan(char *path)
 {
 
 	/* LAB 5 TODO BEGIN */
+	ipc_msg_t* ipc_msg;
+	int ret;
+	struct fs_request* fr_ptr;
 
+	int fd = alloc_fd();
+	/* allocate user fd to file pid */
+	ipc_msg = ipc_create_msg(fs_ipc_struct_for_shell, sizeof(struct fs_request), 1);
+	fr_ptr = (struct fs_request *) ipc_get_msg_data(ipc_msg);
+	fr_ptr->req = FS_REQ_OPEN;
+	fr_ptr->open.new_fd = fd;
+	
+	if (strlen(path) == 0) 
+		strcpy((void *) fr_ptr->open.pathname, "/");
+	else if (*path != '/') {
+		fr_ptr->open.pathname[0] = '/';
+		strcpy((void *) (fr_ptr->open.pathname + 1), path);
+	} else {
+		strcpy((void *) fr_ptr->open.pathname, path);
+	};
+	
+	ret = ipc_call(fs_ipc_struct_for_shell, ipc_msg);
+	ipc_destroy_msg(fs_ipc_struct_for_shell, ipc_msg);
+	if (ret == -ENOTDIR && *path != '.') {
+		printf("%s\n", path);
+	} else {
+		/* reference to demo_getdents(int fd) */
+		char name[BUFLEN];
+		char scan_buf[BUFLEN];
+		int offset;
+		struct dirent* p;
+
+		int ret = getdents(fd, scan_buf, BUFLEN);
+
+		for (offset = 0; offset < ret; offset += p->d_reclen) {
+			p = (struct dirent *)(scan_buf + offset);
+			get_dent_name(p, name);
+			if (strcmp(name, ".")) {
+				printf("%s", name);
+				if (offset + p->d_reclen < ret) 
+					printf(" ");
+			};
+		};
+	};
+
+	return;
 	/* LAB 5 TODO END */
 }
 
@@ -226,7 +391,10 @@ int do_cat(char *cmdline)
 int do_echo(char *cmdline)
 {
 	/* LAB 5 TODO BEGIN */
-
+	cmdline += 4;
+	while (*cmdline == ' ')
+		cmdline++;
+	printf("%s", cmdline);
 	/* LAB 5 TODO END */
 	return 0;
 }
@@ -278,7 +446,21 @@ int run_cmd(char *cmdline)
 	int cap = 0;
 	/* Hint: Function chcore_procm_spawn() could be used here. */
 	/* LAB 5 TODO BEGIN */
+	char pathbuf[BUFLEN];
+	int ret;
+	pathbuf[0] = '\0';
+	while (*cmdline == ' ')
+		cmdline++;
+	if (*cmdline == '\0') return -1;
+	else if (*cmdline != '/') strcpy(pathbuf, "/");
+	strcat(pathbuf, cmdline);
 
+	int* mt_cap_out;
+	ret = chcore_procm_spawn(pathbuf, mt_cap_out);
+	if (ret < 0) {
+		printf("[Shell] No such binary\n");
+		return ret;
+	};
 	/* LAB 5 TODO END */
 	return 0;
 }
